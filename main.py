@@ -149,11 +149,16 @@ def signal_handler(sig, frame):
     logging.info("Получен сигнал завершения, закрытие устройства.")
     sys.exit(0)
 
+stop_event = threading.Event()
+
 def modbus_task(device):
-    while True:
-        data = device.read_data()
-        if data:
-            logging.info(f"Текущие данные Modbus: {data}")
+    while not stop_event.is_set():
+        try:    
+            data = device.read_data()
+            if data:
+                logging.info(f"Текущие данные Modbus: {data}")
+        except Exception as e:
+            stop_event.set()
         time.sleep(5)
 
 def usb_task(device):
