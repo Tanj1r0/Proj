@@ -73,7 +73,7 @@ class BZK03:
             except serial.SerialException as e:
                 logging.error(f"Ошибка при переоткрытии USB: {e}")
 
-    def retry_operation(self, func, max_retries=3):
+    def retry_operation(self, func, max_retries=3, exit_on_error = False):
         retries = 0
         while retries < max_retries:
             try:
@@ -81,6 +81,8 @@ class BZK03:
             except Exception as e:
                 retries += 1
                 logging.error(f"Ошибка: {e}. Попытка {retries}/{max_retries}.")
+                if exit_on_error:
+                    break
                 time.sleep(2)
         raise RuntimeError("Не удалось выполнить операцию после нескольких попыток.")
 
