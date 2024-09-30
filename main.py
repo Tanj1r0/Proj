@@ -165,7 +165,7 @@ def usb_task(device):
 def main():
     signal.signal(signal.SIGINT, signal_handler)
 
-    config = load_config('C:/Users/Nikon/Desktop/ЧЭАЗ/Проект/config.json')
+    config = load_config('/workspaces/Proj/config.json')
 
     global device
 
