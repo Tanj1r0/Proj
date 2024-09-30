@@ -1,0 +1,12 @@
+{
+    "rs485_port": "COM3",
+    "usb_port": "COM4",
+    "baudrate": 9600,
+    "email_settings": {
+        "smtp_server": "smtp.example.com",
+        "smtp_port": 587,
+        "email": "your_email@example.com",
+        "password": "your_password",
+        "recipient": "admin@example.com"
+    }
+}
