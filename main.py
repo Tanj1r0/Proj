@@ -130,15 +130,19 @@ class BZK03:
         except serial.SerialException as e:
             logging.error(f"Ошибка при записи по USB: {e}")
 
-# Веб-интерфейс для мониторинга устройства
 @app.route('/status')
 def status():
     global device
-    return jsonify({
-        "rs485_port": device.port_rs485.is_open,
-        "usb_port": device.port_usb.is_open,
-        "last_data": device.read_data()
-    })
+    try:
+        data = device.read_data()
+        return jsonify({
+            "rs485_port": device.port_rs485.is_open,
+            "usb_port": device.port_usb.is_open,
+            "last_data": data
+        })
+    except Exception as e:
+        logging.error(f"Ошибка получения статуса: {e}")
+        return jsonify({"error": "Невозможно получить данные"}), 500
 
 # Загрузка конфигурации из файла
 def load_config(filename):
