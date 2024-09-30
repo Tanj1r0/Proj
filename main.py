@@ -129,7 +129,8 @@ class BZK03:
                 logging.info(f"Записаны настройки по USB: {settings}")
         except serial.SerialException as e:
             logging.error(f"Ошибка при записи по USB: {e}")
-
+            
+# Веб-интерфейс для мониторинга устройства
 @app.route('/status')
 def status():
     global device
@@ -146,9 +147,20 @@ def status():
 
 # Загрузка конфигурации из файла
 def load_config(filename):
-    with open(filename, 'r') as f:
-        config = json.load(f)
-    return config
+    try:
+        with open(filename, 'r') as f:
+            config = json.load(f)
+        
+        # Проверка обязательных полей
+        required_fields = ['rs485_port', 'usb_port', 'baudrate']
+        for field in required_fields:
+            if field not in config:
+                raise ValueError(f"Отсутствует обязательный параметр {field}")
+        
+        return config
+    except (json.JSONDecodeError, FileNotFoundError) as e:
+        logging.error(f"Ошибка загрузки конфигурации: {e}")
+        raise
 
 # Обработка сигнала завершения программы
 def signal_handler(sig, frame):
