@@ -13,12 +13,12 @@ from flask import Flask, jsonify
 from logging.handlers import RotatingFileHandler
 
 # Настройка логирования с ротацией логов
-log_handler = RotatingFileHandler('bzk03_log.log', maxBytes=5000000, backupCount=5)
+log_handler = RotatingFileHandler('bdz03_log.log', maxBytes=5000000, backupCount=5)
 logging.basicConfig(handlers=[log_handler], level=logging.INFO)
 
 app = Flask(__name__)
 
-class BZK03:
+class BDZ03:
     def __init__(self, port_rs485, port_usb, baudrate=9600):
         try:
             self.port_rs485 = serial.Serial(port_rs485, baudrate, timeout=1)
@@ -43,6 +43,7 @@ class BZK03:
             logging.error(f"Ошибка инициализации Modbus: {e}")
             self.close()
             raise RuntimeError("Ошибка инициализации Modbus.")
+        
 
     def __enter__(self):
         return self
@@ -73,7 +74,7 @@ class BZK03:
             except serial.SerialException as e:
                 logging.error(f"Ошибка при переоткрытии USB: {e}")
 
-    def retry_operation(self, func, max_retries=3, exit_on_error = False):
+    def retry_operation(self, func, max_retries=3, exit_on_error=False):
         retries = 0
         while retries < max_retries:
             try:
@@ -129,38 +130,22 @@ class BZK03:
                 logging.info(f"Записаны настройки по USB: {settings}")
         except serial.SerialException as e:
             logging.error(f"Ошибка при записи по USB: {e}")
-            
+
 # Веб-интерфейс для мониторинга устройства
 @app.route('/status')
 def status():
     global device
-    try:
-        data = device.read_data()
-        return jsonify({
-            "rs485_port": device.port_rs485.is_open,
-            "usb_port": device.port_usb.is_open,
-            "last_data": data
-        })
-    except Exception as e:
-        logging.error(f"Ошибка получения статуса: {e}")
-        return jsonify({"error": "Невозможно получить данные"}), 500
+    return jsonify({
+        "rs485_port": device.port_rs485.is_open,
+        "usb_port": device.port_usb.is_open,
+        "last_data": device.read_data()
+    })
 
 # Загрузка конфигурации из файла
 def load_config(filename):
-    try:
-        with open(filename, 'r') as f:
-            config = json.load(f)
-        
-        # Проверка обязательных полей
-        required_fields = ['rs485_port', 'usb_port', 'baudrate']
-        for field in required_fields:
-            if field not in config:
-                raise ValueError(f"Отсутствует обязательный параметр {field}")
-        
-        return config
-    except (json.JSONDecodeError, FileNotFoundError) as e:
-        logging.error(f"Ошибка загрузки конфигурации: {e}")
-        raise
+    with open(filename, 'r') as f:
+        config = json.load(f)
+    return config
 
 # Обработка сигнала завершения программы
 def signal_handler(sig, frame):
@@ -188,12 +173,12 @@ def usb_task(device):
 def main():
     signal.signal(signal.SIGINT, signal_handler)
 
-    config = load_config('/workspaces/Proj/config.json')
+    config = load_config('config.json')
 
     global device
 
     try:
-        with BZK03(port_rs485=config['rs485_port'], port_usb=config['usb_port'], baudrate=config['baudrate']) as device:
+        with BDZ03(port_rs485=config['rs485_port'], port_usb=config['usb_port'], baudrate=config['baudrate']) as device:
             modbus_thread = threading.Thread(target=modbus_task, args=(device,))
             usb_thread = threading.Thread(target=usb_task, args=(device,))
 
