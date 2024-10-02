@@ -3,35 +3,140 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Управление устройством</title>
+    <title>Мониторинг BZK-03</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
+            background-color: #f0f2f5;
+            color: #333;
             margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 80%;
+            margin: 0 auto;
             padding: 20px;
-            }
+        }
+        h1 {
+            text-align: center;
+            color: #007BFF;
+        }
+        .status {
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .status div {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+        }
+        button {
+            background-color: #007BFF;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .data-section {
+            margin-top: 20px;
+        }
+        .data-section h2 {
+            text-align: center;
+        }
+        .log {
+            max-height: 300px;
+            overflow-y: auto;
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Управление устройством BZD</h1>
+        <h1>Мониторинг устройства BDZ-03</h1>
 
-        <h2>Статус устройства</h2>
-        <button class="btm" onclick="getStatus()">Проверить статус</button>
-        <div id="statusResult"></div>
+        <div class="status">
+            <h2>Статус устройства</h2>
+            <div>
+                <span>RS-485 порт:</span>
+                <span id="rs485-status">Загрузка...</span>
+            </div>
+            <div>
+                <span>USB порт:</span>
+                <span id="usb-status">Загрузка...</span>
+            </div>
+            <div>
+                <span>Последние данные:</span>
+                <span id="last-data">Загрузка...</span>
+            </div>
+            <button onclick="selfTest()">Запустить самотест</button>
+            <button onclick="oscilloscope()">Запись осциллограмм</button>
+        </div>
 
-        <h2>Запись настроек</h2>
-        <labe for="register">Регистр</label>
-            <input type="number" id="register" placeholder="Введите номер регистра">
-            <labe for="value">Значение</labe>
-            <input type="number" id="value" placeholder="Введите знечение">
-            <button class="btn" onclick="writeSetting()">Записать настроейки</button>
-
-            <div id="writeResult"></div>
-
-            <h2>Чтение данных по USB</h2>
-            
+        <div class="data-section">
+            <h2>Лог событий</h2>
+            <div class="log" id="log-section">Логирование...</div>
+        </div>
     </div>
+
+    <script>
+        // Функция обновления статуса устройства
+        async function updateStatus() {
+            try {
+                const response = await fetch('/status');
+                const data = await response.json();
+                document.getElementById('rs485-status').textContent = data.rs485_port ? 'Открыт' : 'Закрыт';
+                document.getElementById('usb-status').textContent = data.usb_port ? 'Открыт' : 'Закрыт';
+                document.getElementById('last-data').textContent = JSON.stringify(data.last_data);
+            } catch (error) {
+                console.error('Ошибка при обновлении статуса:', error);
+            }
+        }
+
+        // Функция для самотеста устройства
+        async function selfTest() {
+            try {
+                const response = await fetch('/self_test', { method: 'POST' });
+                const result = await response.json();
+                addLog('Самотест: ' + result.message);
+            } catch (error) {
+                console.error('Ошибка самотеста:', error);
+                addLog('Ошибка самотеста: ' + error.message);
+            }
+        }
+
+        // Функция записи осциллограмм
+        async function oscilloscope() {
+            try {
+                const response = await fetch('/oscilloscope', { method: 'POST' });
+                const result = await response.json();
+                addLog('Осциллографирование: ' + result.message);
+            } catch (error) {
+                console.error('Ошибка осциллографирования:', error);
+                addLog('Ошибка осциллографирования: ' + error.message);
+            }
+        }
+
+        // Добавление записей в лог
+        function addLog(message) {
+            const logSection = document.getElementById('log-section');
+            const logMessage = document.createElement('div');
+            logMessage.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logSection.appendChild(logMessage);
+            logSection.scrollTop = logSection.scrollHeight;
+        }
+
+        // Автоматическое обновление статуса устройства каждые 5 секунд
+        setInterval(updateStatus, 5000);
+        updateStatus(); // Первый вызов сразу при загрузке страницы
+    </script>
 </body>
 </html>
